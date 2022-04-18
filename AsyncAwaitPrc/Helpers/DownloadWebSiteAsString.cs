@@ -25,7 +25,8 @@ namespace AsyncAwaitPrc.Helpers
             string websiteData;
             using (WebClient client = new WebClient())
             {
-                websiteData = await Task.Run(() => client.DownloadString(site));
+                //websiteData = await Task.Run(() => client.DownloadString(site));
+                websiteData = await client.DownloadStringTaskAsync(site);
             }
 
             return $"{site} downloaded: {websiteData.Length} characters long{Environment.NewLine}";

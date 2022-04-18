@@ -81,10 +81,12 @@ namespace AsyncAwaitPrc.ViewModel
         private async Task RunDownLoadAsync(object obj)
         {
             GeneralCommandStart();
+            List<Task<string>> tasks = new();
             foreach (var site in websites)
             {
-                StrStatus += await DownloadWebSiteAsString.DownloadWebsiteAsync(site);
+                tasks.Add(DownloadWebSiteAsString.DownloadWebsiteAsync(site));
             }
+            StrStatus = string.Join("", await Task.WhenAll(tasks));
             GeneralCommandEnd();
         }
 
