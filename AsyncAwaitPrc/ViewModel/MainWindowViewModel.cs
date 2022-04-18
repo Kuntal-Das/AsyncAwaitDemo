@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -26,6 +27,7 @@ namespace AsyncAwaitPrc.ViewModel
         };
 
         private Progress<ProgressReportModel> _progress = new Progress<ProgressReportModel>();
+        CancellationTokenSource cts = new CancellationTokenSource();
 
         Stopwatch watch;
         private bool _isRunning;
@@ -60,6 +62,17 @@ namespace AsyncAwaitPrc.ViewModel
                 if (_downloadSyncCommand == null)
                     _downloadSyncCommand = new RelayCommand(RunDownLoadSync, canDownload);
                 return _downloadSyncCommand;
+            }
+        }
+
+        private ICommand _downloadParalleSyncCommand;
+        public ICommand DownloadParalleSyncCommand
+        {
+            get
+            {
+                if (_downloadParalleSyncCommand == null)
+                    _downloadParalleSyncCommand = new RelayCommand(RunDownLoadParralleSync, canDownload);
+                return _downloadParalleSyncCommand;
             }
         }
 
@@ -98,7 +111,7 @@ namespace AsyncAwaitPrc.ViewModel
 
         private void CancelDownload(object obj)
         {
-            throw new NotImplementedException();
+            cts.Cancel();
         }
 
         public MainWindowViewModel()
@@ -124,13 +137,56 @@ namespace AsyncAwaitPrc.ViewModel
             IProgress<ProgressReportModel> progress = _progress;
             ProgressReportModel progressReport = new();
             GeneralCommandStart();
-            foreach (var site in websites)
+            try
             {
-                var result = DownloadWebSiteAsString.DownloadWebsite(site);
+                foreach (var site in websites)
+                {
+                    if (cts.Token.IsCancellationRequested)
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                    }
 
-                progressReport.ProgressStatus.Add(result);
-                progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+                    var result = DownloadWebSiteAsString.DownloadWebsite(site);
 
+                    progressReport.ProgressStatus.Add(result);
+                    progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+
+                    progress.Report(progressReport);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                progressReport.ProgressStatus.Add("The async download was cancelled");
+                progress.Report(progressReport);
+            }
+            GeneralCommandEnd(progressReport);
+        }
+
+        private void RunDownLoadParralleSync(object parameter)
+        {
+            IProgress<ProgressReportModel> progress = _progress;
+            ProgressReportModel progressReport = new();
+            GeneralCommandStart();
+            try
+            {
+                Parallel.ForEach<string>(websites, (site) =>
+                {
+                    if (cts.Token.IsCancellationRequested)
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                    }
+
+                    var result = DownloadWebSiteAsString.DownloadWebsite(site);
+
+                    progressReport.ProgressStatus.Add(result);
+                    progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+
+                    progress.Report(progressReport);
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                progressReport.ProgressStatus.Add("The async download was cancelled");
                 progress.Report(progressReport);
             }
             GeneralCommandEnd(progressReport);
@@ -141,13 +197,26 @@ namespace AsyncAwaitPrc.ViewModel
             IProgress<ProgressReportModel> progress = _progress;
             ProgressReportModel progressReport = new();
             GeneralCommandStart();
-            foreach (var site in websites)
+            try
             {
-                var result = await DownloadWebSiteAsString.DownloadWebsiteAsync(site);
+                foreach (var site in websites)
+                {
+                    if (cts.Token.IsCancellationRequested)
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                    }
 
-                progressReport.ProgressStatus.Add(result);
-                progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+                    var result = await DownloadWebSiteAsString.DownloadWebsiteAsync(site);
 
+                    progressReport.ProgressStatus.Add(result);
+                    progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+
+                    progress.Report(progressReport);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                progressReport.ProgressStatus.Add("The async download was cancelled");
                 progress.Report(progressReport);
             }
             GeneralCommandEnd(progressReport);
@@ -159,12 +228,25 @@ namespace AsyncAwaitPrc.ViewModel
             ProgressReportModel progressReport = new();
             GeneralCommandStart();
             List<Task<string>> tasks = new();
-            foreach (var site in websites)
+            try
             {
-                tasks.Add(DownloadWebSiteAsString.DownloadWebsiteAsync(site));
+                foreach (var site in websites)
+                {
+                    if (cts.Token.IsCancellationRequested)
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                    }
+
+                    tasks.Add(DownloadWebSiteAsString.DownloadWebsiteAsync(site));
+                }
+                progressReport.ProgressStatus = (await Task.WhenAll(tasks)).ToList();
+                progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
             }
-            progressReport.ProgressStatus = (await Task.WhenAll(tasks)).ToList();
-            progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+            catch (OperationCanceledException)
+            {
+                progressReport.ProgressStatus.Add("The async download was cancelled");
+                progress.Report(progressReport);
+            }
 
             GeneralCommandEnd(progressReport);
         }
@@ -172,8 +254,13 @@ namespace AsyncAwaitPrc.ViewModel
         private void GeneralCommandStart()
         {
             watch.Reset();
+
+            cts.Dispose();
+            cts = new CancellationTokenSource();
+
             StrStatus = "";
             _isRunning = true;
+
             watch.Start();
         }
         private void GeneralCommandEnd(ProgressReportModel progressReport)

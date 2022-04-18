@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:AsyncAwaitPrc.ViewModel"
         xmlns:model="clr-namespace:AsyncAwaitPrc.Model"
         mc:Ignorable="d"
-        Title="MainWindow" Height="400" Width="500">
+        Title="MainWindow" Height="500" Width="500">
     <Window.Resources>
         <vm:MainWindowViewModel x:Key="MainVM"/>
         <Style TargetType="TextBlock">
@@ -25,6 +25,7 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
@@ -46,15 +47,18 @@
             Grid.Row="2" Grid.ColumnSpan="2"/>
         <Button 
             Command="{Binding DownloadSyncCommand}"
-            Grid.Row="3" Grid.Column="0">Normal Execute</Button>
+            Grid.Row="3" Grid.Column="0">Sync Execute</Button>
+        <Button 
+            Command="{Binding DownloadParalleSyncCommand}"
+            Grid.Row="3" Grid.Column="1">Paralle Sync Execute</Button>
         <Button 
             Command="{Binding DownloadAsyncCommand}"
-            Grid.Row="3" Grid.Column="1">Async Execute</Button>
+            Grid.Row="4" Grid.Column="0">Async Execute</Button>
         <Button 
             Command="{Binding DownloadParalleAsyncCommand}"
-            Grid.Row="4" Grid.Column="0">Parralle Async Execute</Button>
+            Grid.Row="4" Grid.Column="1">Parralle Async Execute</Button>
         <Button 
             Command="{Binding CancelDownloadCommand}"
-            Grid.Row="4" Grid.Column="1">Stop</Button>
+            Grid.Row="5" Grid.ColumnSpan="2">Stop</Button>
     </Grid>
 </Window>
