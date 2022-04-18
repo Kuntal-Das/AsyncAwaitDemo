@@ -17,7 +17,7 @@ namespace AsyncAwaitPrc.Helpers
                 websiteData = client.DownloadString(site);
             }
 
-            return $"{site} downloaded: {websiteData.Length} characters long{Environment.NewLine}";
+            return $"{site} downloaded: {websiteData.Length} characters long";
         }
 
         internal static async Task<string> DownloadWebsiteAsync(string site)
@@ -29,7 +29,7 @@ namespace AsyncAwaitPrc.Helpers
                 websiteData = await client.DownloadStringTaskAsync(site);
             }
 
-            return $"{site} downloaded: {websiteData.Length} characters long{Environment.NewLine}";
+            return $"{site} downloaded: {websiteData.Length} characters long";
         }
     }
 }

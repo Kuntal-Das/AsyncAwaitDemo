@@ -4,52 +4,57 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AsyncAwaitPrc.View"
-        xmlns:VM="clr-namespace:AsyncAwaitPrc.ViewModel"
+        xmlns:vm="clr-namespace:AsyncAwaitPrc.ViewModel"
+        xmlns:model="clr-namespace:AsyncAwaitPrc.Model"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="500">
+        Title="MainWindow" Height="400" Width="500">
     <Window.Resources>
-        <VM:MainWindowViewModel x:Key="MainVM"/>
-        
+        <vm:MainWindowViewModel x:Key="MainVM"/>
         <Style TargetType="TextBlock">
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
         <Style TargetType="Button">
             <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Margin" Value="5,10"/>
             <Setter Property="Padding" Value="15,7"/>
         </Style>
-        
+
     </Window.Resources>
     <Grid Margin="10" DataContext="{StaticResource MainVM}">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0" Grid.ColumnSpan="3" 
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" 
                    HorizontalAlignment="Center"
                    FontSize="30">Simple Async Demo</TextBlock>
+
+        <ProgressBar 
+            Value="{Binding PercentageComplete}"
+            Grid.Row="1" Grid.ColumnSpan="2"
+            Height="15" Margin="0,5"/>
         <TextBox 
             Text="{Binding StrStatus}"
-            Grid.Row="1" Grid.ColumnSpan="3"/>
+            IsEnabled="False"
+            Grid.Row="2" Grid.ColumnSpan="2"/>
         <Button 
             Command="{Binding DownloadSyncCommand}"
-            Grid.Row="2" Grid.Column="0" 
-            HorizontalAlignment="Center" 
-            VerticalAlignment="Center">Normal Execute</Button>
-        <Button 
-            Grid.Row="2" Grid.Column="1" 
-            HorizontalAlignment="Center" 
-            VerticalAlignment="Center">Stop</Button>
+            Grid.Row="3" Grid.Column="0">Normal Execute</Button>
         <Button 
             Command="{Binding DownloadAsyncCommand}"
-            Grid.Row="2" Grid.Column="2" 
-            HorizontalAlignment="Center" 
-            VerticalAlignment="Center">Async Execute</Button>
+            Grid.Row="3" Grid.Column="1">Async Execute</Button>
+        <Button 
+            Command="{Binding DownloadParalleAsyncCommand}"
+            Grid.Row="4" Grid.Column="0">Parralle Async Execute</Button>
+        <Button 
+            Command="{Binding CancelDownloadCommand}"
+            Grid.Row="4" Grid.Column="1">Stop</Button>
     </Grid>
 </Window>

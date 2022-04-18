@@ -25,15 +25,32 @@ namespace AsyncAwaitPrc.ViewModel
             "https://www.stackoverflow.com",
         };
 
+        private Progress<ProgressReportModel> _progress = new Progress<ProgressReportModel>();
+
+        Stopwatch watch;
+        private bool _isRunning;
+
+        private int _percentageComplete;
+        public int PercentageComplete
+        {
+            get { return _percentageComplete; }
+            set
+            {
+                _percentageComplete = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         private string _strStatus;
         public string StrStatus
         {
-            get { return _strStatus; }
-            set { _strStatus = value; NotifyPropertyChanged(); }
+            get { return _strStatus.ToString(); }
+            set
+            {
+                _strStatus = value;
+                NotifyPropertyChanged();
+            }
         }
-        private bool _isRunning;
-
-        Stopwatch watch;
 
         private ICommand _downloadSyncCommand;
         public ICommand DownloadSyncCommand
@@ -41,7 +58,7 @@ namespace AsyncAwaitPrc.ViewModel
             get
             {
                 if (_downloadSyncCommand == null)
-                    _downloadSyncCommand = new RelayCommand(RunDownLoadSync, canExecte);
+                    _downloadSyncCommand = new RelayCommand(RunDownLoadSync, canDownload);
                 return _downloadSyncCommand;
             }
         }
@@ -52,57 +69,119 @@ namespace AsyncAwaitPrc.ViewModel
             get
             {
                 if (_downloadAsyncCommand == null)
-                    _downloadAsyncCommand = new AsyncRelayCommand(RunDownLoadAsync, canExecte);
+                    _downloadAsyncCommand = new AsyncRelayCommand(RunDownLoadAsync, canDownload);
                 return _downloadAsyncCommand;
             }
+        }
+
+        private ICommand _downloadParalleAsyncCommand;
+        public ICommand DownloadParalleAsyncCommand
+        {
+            get
+            {
+                if (_downloadParalleAsyncCommand == null)
+                    _downloadParalleAsyncCommand = new AsyncRelayCommand(RunDownLoadParalleAsync, canDownload);
+                return _downloadParalleAsyncCommand;
+            }
+        }
+
+        private ICommand _cancelDownloadCommand;
+        public ICommand CancelDownloadCommand
+        {
+            get
+            {
+                if (_cancelDownloadCommand == null)
+                    _cancelDownloadCommand = new RelayCommand(CancelDownload, canCancelDownload);
+                return _cancelDownloadCommand;
+            }
+        }
+
+        private void CancelDownload(object obj)
+        {
+            throw new NotImplementedException();
         }
 
         public MainWindowViewModel()
         {
             _isRunning = false;
             watch = new Stopwatch();
-            StrStatus = string.Empty;
+            StrStatus = "";
+            _progress.ProgressChanged += ReportProgress;
         }
 
-        private bool canExecte(object arg)
+        private void ReportProgress(object sender, ProgressReportModel e)
         {
-            return !_isRunning;
+            PercentageComplete = e.PercentageComplete;
+            StrStatus = string.Join(Environment.NewLine, e.ProgressStatus);
         }
+
+        private bool canDownload(object arg) => !_isRunning;
+
+        private bool canCancelDownload(object arg) => _isRunning;
 
         private void RunDownLoadSync(object parameter)
         {
+            IProgress<ProgressReportModel> progress = _progress;
+            ProgressReportModel progressReport = new();
             GeneralCommandStart();
             foreach (var site in websites)
             {
-                StrStatus += DownloadWebSiteAsString.DownloadWebsite(site);
+                var result = DownloadWebSiteAsString.DownloadWebsite(site);
+
+                progressReport.ProgressStatus.Add(result);
+                progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+
+                progress.Report(progressReport);
             }
-            GeneralCommandEnd();
+            GeneralCommandEnd(progressReport);
         }
 
-        private async Task RunDownLoadAsync(object obj)
+        private async Task RunDownLoadAsync(object parameter)
         {
+            IProgress<ProgressReportModel> progress = _progress;
+            ProgressReportModel progressReport = new();
+            GeneralCommandStart();
+            foreach (var site in websites)
+            {
+                var result = await DownloadWebSiteAsString.DownloadWebsiteAsync(site);
+
+                progressReport.ProgressStatus.Add(result);
+                progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+
+                progress.Report(progressReport);
+            }
+            GeneralCommandEnd(progressReport);
+        }
+
+        private async Task RunDownLoadParalleAsync(object parameter)
+        {
+            IProgress<ProgressReportModel> progress = _progress;
+            ProgressReportModel progressReport = new();
             GeneralCommandStart();
             List<Task<string>> tasks = new();
             foreach (var site in websites)
             {
                 tasks.Add(DownloadWebSiteAsString.DownloadWebsiteAsync(site));
             }
-            StrStatus = string.Join("", await Task.WhenAll(tasks));
-            GeneralCommandEnd();
+            progressReport.ProgressStatus = (await Task.WhenAll(tasks)).ToList();
+            progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+
+            GeneralCommandEnd(progressReport);
         }
 
         private void GeneralCommandStart()
         {
             watch.Reset();
-            StrStatus = string.Empty;
+            StrStatus = "";
             _isRunning = true;
             watch.Start();
         }
-        private void GeneralCommandEnd()
+        private void GeneralCommandEnd(ProgressReportModel progressReport)
         {
             watch.Stop();
             _isRunning = false;
-            StrStatus += $"Total time elapsed: {watch.Elapsed}";
+            progressReport.ProgressStatus.Add($"Total time elapsed: {watch.Elapsed}");
+            (_progress as IProgress<ProgressReportModel>).Report(progressReport);
         }
     }
 }
