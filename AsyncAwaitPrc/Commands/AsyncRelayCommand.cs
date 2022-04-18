@@ -32,6 +32,12 @@ namespace AsyncAwaitPrc.Commands
         public async void Execute(object parameter)
         {
             await executeAsync(parameter);
+            RaiseCanExecuteChanged();
+        }
+
+        protected void RaiseCanExecuteChanged()
+        {
+            CommandManager.InvalidateRequerySuggested();
         }
     }
 }

@@ -31,7 +31,8 @@ namespace AsyncAwaitPrc.ViewModel
             get { return _strStatus; }
             set { _strStatus = value; NotifyPropertyChanged(); }
         }
-        private bool isRunning;
+        private bool _isRunning;
+
         Stopwatch watch;
 
         private ICommand _downloadSyncCommand;
@@ -58,14 +59,14 @@ namespace AsyncAwaitPrc.ViewModel
 
         public MainWindowViewModel()
         {
-            isRunning = false;
+            _isRunning = false;
             watch = new Stopwatch();
-            _strStatus = string.Empty;
+            StrStatus = string.Empty;
         }
 
         private bool canExecte(object arg)
         {
-            return !isRunning;
+            return !_isRunning;
         }
 
         private void RunDownLoadSync(object parameter)
@@ -94,13 +95,13 @@ namespace AsyncAwaitPrc.ViewModel
         {
             watch.Reset();
             StrStatus = string.Empty;
-            isRunning = true;
+            _isRunning = true;
             watch.Start();
         }
         private void GeneralCommandEnd()
         {
             watch.Stop();
-            isRunning = false;
+            _isRunning = false;
             StrStatus += $"Total time elapsed: {watch.Elapsed}";
         }
     }
