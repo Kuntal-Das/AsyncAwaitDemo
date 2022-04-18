@@ -18,12 +18,18 @@ namespace AsyncAwaitPrc.ViewModel
     {
         private static List<string> websites = new List<string>()
         {
+            "https://en.wikipedia.org/wiki/Main_Page",
             "https://www.yahoo.com",
             "https://www.google.com",
             "https://www.microsoft.com",
             "https://www.cnn.com",
             "https://www.codeproject.com",
             "https://www.stackoverflow.com",
+            "https://www.amazon.com",
+            "https://www.amazon.in",
+            "https://www.flipkart.com",
+            "https://www.facebook.com",
+            "https://www.twitter.com"
         };
 
         private Progress<ProgressReportModel> _progress = new Progress<ProgressReportModel>();
@@ -137,9 +143,9 @@ namespace AsyncAwaitPrc.ViewModel
             IProgress<ProgressReportModel> progress = _progress;
             ProgressReportModel progressReport = new();
             GeneralCommandStart();
-            try
+            foreach (var site in websites)
             {
-                foreach (var site in websites)
+                try
                 {
                     if (cts.Token.IsCancellationRequested)
                     {
@@ -153,11 +159,12 @@ namespace AsyncAwaitPrc.ViewModel
 
                     progress.Report(progressReport);
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                progressReport.ProgressStatus.Add("The async download was cancelled");
-                progress.Report(progressReport);
+                catch (OperationCanceledException)
+                {
+                    progressReport.ProgressStatus.Add($"The sync download was cancelled for {site}");
+                    progress.Report(progressReport);
+                    break;
+                }
             }
             GeneralCommandEnd(progressReport);
         }
@@ -167,9 +174,9 @@ namespace AsyncAwaitPrc.ViewModel
             IProgress<ProgressReportModel> progress = _progress;
             ProgressReportModel progressReport = new();
             GeneralCommandStart();
-            try
+            Parallel.ForEach<string>(websites, (site, state) =>
             {
-                Parallel.ForEach<string>(websites, (site) =>
+                try
                 {
                     if (cts.Token.IsCancellationRequested)
                     {
@@ -182,13 +189,14 @@ namespace AsyncAwaitPrc.ViewModel
                     progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
 
                     progress.Report(progressReport);
-                });
-            }
-            catch (OperationCanceledException)
-            {
-                progressReport.ProgressStatus.Add("The async download was cancelled");
-                progress.Report(progressReport);
-            }
+                }
+                catch (OperationCanceledException)
+                {
+                    progressReport.ProgressStatus.Add($"The Paralle sync download was cancelled for {site}");
+                    progress.Report(progressReport);
+                    state.Break();
+                }
+            });
             GeneralCommandEnd(progressReport);
         }
 
@@ -197,9 +205,9 @@ namespace AsyncAwaitPrc.ViewModel
             IProgress<ProgressReportModel> progress = _progress;
             ProgressReportModel progressReport = new();
             GeneralCommandStart();
-            try
+            foreach (var site in websites)
             {
-                foreach (var site in websites)
+                try
                 {
                     if (cts.Token.IsCancellationRequested)
                     {
@@ -213,11 +221,12 @@ namespace AsyncAwaitPrc.ViewModel
 
                     progress.Report(progressReport);
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                progressReport.ProgressStatus.Add("The async download was cancelled");
-                progress.Report(progressReport);
+                catch (OperationCanceledException)
+                {
+                    progressReport.ProgressStatus.Add($"The async download for {site} was cancelled");
+                    progress.Report(progressReport);
+                    break;
+                }
             }
             GeneralCommandEnd(progressReport);
         }
@@ -227,27 +236,33 @@ namespace AsyncAwaitPrc.ViewModel
             IProgress<ProgressReportModel> progress = _progress;
             ProgressReportModel progressReport = new();
             GeneralCommandStart();
-            List<Task<string>> tasks = new();
-            try
+            await Task.Run(() =>
             {
-                foreach (var site in websites)
+                Parallel.ForEach(websites, (site, state) =>
                 {
-                    if (cts.Token.IsCancellationRequested)
+                    try
                     {
-                        cts.Token.ThrowIfCancellationRequested();
+                        var result = DownloadWebSiteAsString.DownloadWebsite(site);
+
+                        if (cts.Token.IsCancellationRequested)
+                        {
+                            cts.Token.ThrowIfCancellationRequested();
+                        }
+
+                        progressReport.ProgressStatus.Add(result);
+                        progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
+
+                        progress.Report(progressReport);
                     }
-
-                    tasks.Add(DownloadWebSiteAsString.DownloadWebsiteAsync(site));
-                }
-                progressReport.ProgressStatus = (await Task.WhenAll(tasks)).ToList();
-                progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
-            }
-            catch (OperationCanceledException)
-            {
-                progressReport.ProgressStatus.Add("The async download was cancelled");
-                progress.Report(progressReport);
-            }
-
+                    catch (OperationCanceledException)
+                    {
+                        progressReport.ProgressStatus.Add($"The paralle async download for {site} was cancelled");
+                        progress.Report(progressReport);
+                        //if (!state.IsStopped) state.Stop();
+                        state.Break();
+                    }
+                });
+            });
             GeneralCommandEnd(progressReport);
         }
 

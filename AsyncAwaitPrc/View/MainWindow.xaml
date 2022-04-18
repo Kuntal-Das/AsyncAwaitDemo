@@ -43,7 +43,8 @@
             Height="15" Margin="0,5"/>
         <TextBox 
             Text="{Binding StrStatus}"
-            IsEnabled="False"
+            IsReadOnly="True"
+            VerticalScrollBarVisibility="Auto"
             Grid.Row="2" Grid.ColumnSpan="2"/>
         <Button 
             Command="{Binding DownloadSyncCommand}"
