@@ -3,11 +3,9 @@ using AsyncAwaitPrc.Helpers;
 using AsyncAwaitPrc.Model;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -156,14 +154,25 @@ namespace AsyncAwaitPrc.ViewModel
 
                     progressReport.ProgressStatus.Add(result);
                     progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
-
-                    progress.Report(progressReport);
+                }
+                catch (WebException)
+                {
+                    progressReport.ProgressStatus.Add($"No internet connection, {site} not downloaded");
+                    break;
                 }
                 catch (OperationCanceledException)
                 {
                     progressReport.ProgressStatus.Add($"The sync download was cancelled for {site}");
-                    progress.Report(progressReport);
                     break;
+                }
+                catch (Exception ex)
+                {
+                    progressReport.ProgressStatus.Add($"Something went wrong: {ex.Message}");
+                    break;
+                }
+                finally
+                {
+                    progress.Report(progressReport);
                 }
             }
             GeneralCommandEnd(progressReport);
@@ -187,14 +196,25 @@ namespace AsyncAwaitPrc.ViewModel
 
                     progressReport.ProgressStatus.Add(result);
                     progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
-
-                    progress.Report(progressReport);
+                }
+                catch (WebException)
+                {
+                    progressReport.ProgressStatus.Add($"No internet connection, {site} not downloaded");
+                    state.Break();
                 }
                 catch (OperationCanceledException)
                 {
                     progressReport.ProgressStatus.Add($"The Paralle sync download was cancelled for {site}");
-                    progress.Report(progressReport);
                     state.Break();
+                }
+                catch (Exception ex)
+                {
+                    progressReport.ProgressStatus.Add($"Something went wrong: {ex.Message}");
+                    state.Break();
+                }
+                finally
+                {
+                    progress.Report(progressReport);
                 }
             });
             GeneralCommandEnd(progressReport);
@@ -218,14 +238,25 @@ namespace AsyncAwaitPrc.ViewModel
 
                     progressReport.ProgressStatus.Add(result);
                     progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
-
-                    progress.Report(progressReport);
+                }
+                catch (HttpRequestException)
+                {
+                    progressReport.ProgressStatus.Add($"No internet connection, {site} not downloaded");
+                    break;
                 }
                 catch (OperationCanceledException)
                 {
                     progressReport.ProgressStatus.Add($"The async download for {site} was cancelled");
-                    progress.Report(progressReport);
                     break;
+                }
+                catch (Exception ex)
+                {
+                    progressReport.ProgressStatus.Add($"Something went wrong: {ex.Message}");
+                    break;
+                }
+                finally
+                {
+                    progress.Report(progressReport);
                 }
             }
             GeneralCommandEnd(progressReport);
@@ -251,15 +282,26 @@ namespace AsyncAwaitPrc.ViewModel
 
                         progressReport.ProgressStatus.Add(result);
                         progressReport.PercentageComplete = (progressReport.ProgressStatus.Count * 100) / websites.Count;
-
-                        progress.Report(progressReport);
+                    }
+                    catch (HttpRequestException)
+                    {
+                        progressReport.ProgressStatus.Add($"No internet connection, {site} not downloaded");
+                        state.Break();
                     }
                     catch (OperationCanceledException)
                     {
                         progressReport.ProgressStatus.Add($"The paralle async download for {site} was cancelled");
-                        progress.Report(progressReport);
                         //if (!state.IsStopped) state.Stop();
                         state.Break();
+                    }
+                    catch (Exception ex)
+                    {
+                        progressReport.ProgressStatus.Add($"Something went wrong: {ex.Message}");
+                        state.Break();
+                    }
+                    finally
+                    {
+                        progress.Report(progressReport);
                     }
                 });
             });

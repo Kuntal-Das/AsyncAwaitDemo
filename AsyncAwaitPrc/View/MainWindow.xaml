@@ -45,6 +45,7 @@
             Text="{Binding StrStatus}"
             IsReadOnly="True"
             VerticalScrollBarVisibility="Auto"
+            HorizontalScrollBarVisibility="Auto"
             Grid.Row="2" Grid.ColumnSpan="2"/>
         <Button 
             Command="{Binding DownloadSyncCommand}"
